@@ -1,0 +1,21 @@
+[MASTER]
+enable=invalid-name,unused-import,unused-variable
+
+disable=
+    missing-module-docstring,    
+    missing-function-docstring,  
+    wrong-import-order,          
+    import-error,                
+    trailing-newlines,
+    trailing-whitespace,
+    line-too-long
+
+[MESSAGES CONTROL]
+# keep enable/disable above as source of truth
+
+[BASIC]
+good-names=main
+function-naming-style=PascalCase
+variable-naming-style=snake_case
+const-naming-style=UPPER_CASE
+argument-naming-style=snake_case
