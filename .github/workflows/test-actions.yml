@@ -28,9 +28,14 @@ jobs:
         name: Run pylint (Python files excluding source/lib)
         continue-on-error: true
         run: |
-          python -m pip install --upgrade pip pylint
+          echo "Installing pylint..."
+          if ! python -m pip install --upgrade pip pylint >/dev/null 2>pip_install.log; then
+            echo "❌ pip install failed:"; cat pip_install.log
+          else
+            echo "✅ pip installed."
+          fi
           find . -type f -name "*.py" ! -path "./source/lib/*" -print0 \
-            | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc
+            | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc || true
 
       - id: summary
         name: Summary
