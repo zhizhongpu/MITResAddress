@@ -31,16 +31,8 @@ jobs:
           echo "Installing pylint..."
           if ! python -m pip install --upgrade pip pylint >/dev/null 2>pip_install.log; then
             echo "❌ pip install failed:"; cat pip_install.log
-          else
-            echo "✅ pip installed."
           fi
           find . -type f -name "*.py" \
             ! -path "./source/lib/*" ! -path "./.github/*" -print0 \
             | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc || true
 
-      - id: summary
-        name: Summary
-        run: |
-          echo "Step outcomes:"
-          echo "  SCons checker: ${{ steps.scons.outcome }}"
-          echo "  Pylint:        ${{ steps.pylint.outcome }}"
