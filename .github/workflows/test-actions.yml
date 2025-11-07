@@ -34,7 +34,8 @@ jobs:
           else
             echo "✅ pip installed."
           fi
-          find . -type f -name "*.py" ! -path "./source/lib/*" -print0 \
+          find . -type f -name "*.py" \
+            ! -path "./source/lib/*" ! -path "./.github/*" -print0 \
             | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc || true
 
       - id: summary
