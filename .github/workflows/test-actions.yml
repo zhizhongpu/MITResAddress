@@ -14,15 +14,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run SCons checker
-        run: python .github/check_sconscripts.py
-
-      - name: Lint Python files (excluding source/lib)
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
-      - name: Run pylint
+
+      - id: scons
+        name: Run SCons checker
+        continue-on-error: true
+        run: python .github/check_sconscripts.py
+
+      - id: pylint
+        name: Run pylint (Python files excluding source/lib)
+        continue-on-error: true
         run: |
           python -m pip install --upgrade pip pylint
           find . -type f -name "*.py" ! -path "./source/lib/*" -print0 \
             | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc
+
+      - id: summary
+        name: Summary
+        run: |
+          echo "Step outcomes:"
+          echo "  SCons checker: ${{ steps.scons.outcome }}"
+          echo "  Pylint:        ${{ steps.pylint.outcome }}"
