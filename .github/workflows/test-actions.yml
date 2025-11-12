@@ -32,7 +32,7 @@ jobs:
           if ! python -m pip install --upgrade pip pylint >/dev/null 2>pip_install.log; then
             echo "❌ pip install failed:"; cat pip_install.log
           fi
-          find . -type f -name "*.py" \
+          find source/ -type f -name "*.py" \
             ! -path "./source/lib/*" ! -path "./.github/*" -print0 \
             | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc || true
 
