@@ -24,15 +24,8 @@ jobs:
         continue-on-error: true
         run: python .github/check_sconscripts.py
 
-      - id: pylint
-        name: Run pylint (Python files excluding source/lib)
+      - id: newlines
+        name: Add newlines when needed
         continue-on-error: true
-        run: |
-          echo "Installing pylint..."
-          if ! python -m pip install --upgrade pip pylint >/dev/null 2>pip_install.log; then
-            echo "❌ pip install failed:"; cat pip_install.log
-          fi
-          find source/ -type f -name "*.py" \
-            ! -path "./source/lib/*" ! -path "./.github/*" -print0 \
-            | xargs -0 pylint --rcfile=source/lib/linter_config/.pylintrc || true
+        run: python .github/add_newlines.py --fix no
 
