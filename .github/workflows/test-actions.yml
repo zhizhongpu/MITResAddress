@@ -28,3 +28,8 @@ jobs:
         name: Add newlines when needed
         continue-on-error: true
         run: python .github/add_newlines.py --fix yes
+
+      - id: scons_log
+        name: Check for failed scons builds
+        continue-on-error: false
+        run: python .github/check_sconscript_log.py
