@@ -29,6 +29,24 @@ jobs:
         continue-on-error: true
         run: python .github/add_newlines.py --fix yes
 
+      - id: commit_newlines
+        name: Commit newline fixes (if any)
+        if: ${{ always() }}
+        run: |
+          if [ -f .github/newlines_to_commit.txt ] && [ -s .github/newlines_to_commit.txt ]; then
+            echo "Files to commit:"
+            cat .github/newlines_to_commit.txt
+            git add $(cat .github/newlines_to_commit.txt)
+            if git diff --staged --quiet; then
+              echo "No staged changes to commit."
+            else
+              git commit -m "[github-actions] Add missing newlines" --no-verify
+              git push
+            fi
+          else
+            echo "No newline fixes to commit."
+          fi
+
       - id: scons_log
         name: Check for failed scons builds
         continue-on-error: false

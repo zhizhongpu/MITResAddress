@@ -3,69 +3,44 @@ import argparse, subprocess
 from pathlib import Path
 
 EXCLUDED_EXT = {".log", ".txt"}
+OUTFILE = Path(".github/newlines_to_commit.txt")
 
 def GetTrackedFiles():
-    out = subprocess.run(["git","ls-files"], stdout=subprocess.PIPE, check=True).stdout.decode().splitlines()
-    return [Path(p) for p in out if p.strip()]
+    return [Path(p) for p in subprocess.run(["git","ls-files"], stdout=subprocess.PIPE, check=True).stdout.decode().splitlines() if p.strip()]
 
-def IsBinary(path):
-    try:
-        return b"\0" in path.read_bytes()[:4096]
-    except:
+def IsBinary(p):
+    try: 
+        return b"\0" in p.read_bytes()[:4096]
+    except: 
         return True
 
-def NeedsNewline(path):
+def NeedsNewline(p):
     try:
-        data = path.read_bytes()
-        return len(data) == 0 or not data.endswith(b"\n")
-    except:
+        d = p.read_bytes()
+        return len(d)==0 or not d.endswith(b"\n")
+    except: 
         return False
 
-def AddNewline(path):
-    path.write_bytes(path.read_bytes() + b"\n")
-
-def StageFiles(paths):
-    if paths:
-        subprocess.run(["git","add"] + [str(p) for p in paths], check=True)
-
-def CommitIfStaged(msg):
-    if subprocess.run(["git","diff","--cached","--quiet"]).returncode == 0:
-        return False
-    subprocess.run(["git","commit","-m",msg,"--no-verify"], check=True)
-    return True
+def AddNewline(p): p.write_bytes(p.read_bytes()+b"\n")
 
 def ProcessFiles(fix):
-    missing = [
-        p for p in GetTrackedFiles()
-        if p.exists()
-        and p.suffix not in EXCLUDED_EXT
-        and not IsBinary(p)
-        and NeedsNewline(p)
-    ]
-
+    OUTFILE.unlink(missing_ok=True)
+    missing = [p for p in GetTrackedFiles() if p.exists() and p.suffix not in EXCLUDED_EXT and not IsBinary(p) and NeedsNewline(p)]
     if not missing:
-        print("No files missing trailing newlines.")
-        return 0
-
+        print("No files missing trailing newlines."); return 0
     print("Files missing trailing newline:")
-    for p in missing:
-        print(" -", p)
-
-    if not fix:
-        return 0
-
-    for p in missing:
-        AddNewline(p)
-
-    StageFiles(missing)
-    CommitIfStaged("[github-actions] Add missing newlines")
+    for p in missing: print(" -", p)
+    if not fix: return 0
+    for p in missing: AddNewline(p)
+    OUTFILE.write_text("\n".join(str(p) for p in missing))
+    print("Wrote fixes list to", OUTFILE)
     return 0
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--fix", choices=["yes","no"], default="no")
-    args = parser.parse_args()
+def Main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--fix", choices=["yes","no"], default="no")
+    args = p.parse_args()
     return ProcessFiles(args.fix=="yes")
 
-if __name__ == "__main__":
-    main()
+if __name__=="__main__": 
+    Main()
