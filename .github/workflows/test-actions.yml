@@ -19,6 +19,12 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Configure JMSLab Github Actions Bot
+        run: |
+          git config --global user.name "GitHub Actions [bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+
       - id: scons
         name: Run SCons checker
         continue-on-error: true
