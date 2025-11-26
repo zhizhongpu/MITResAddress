@@ -27,4 +27,4 @@ jobs:
       - id: newlines
         name: Add newlines when needed
         continue-on-error: true
-        run: python .github/add_newlines.py --fix no
+        run: python .github/add_newlines.py --fix yes
