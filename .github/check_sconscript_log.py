@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from pathlib import Path
 
-TARGET = "scons: building terminated because of errors."
+TARGET = "terminated because of errors."
 
 def Main():
     bad = []
@@ -13,10 +13,10 @@ def Main():
             pass
 
     if not bad:
-        print("No sconscript.log files contain the error string.")
+        print("No log files contain the error string.")
         return 0
 
-    print("Problematic sconscript.log files:")
+    print("Problematic log files:")
     for p in bad:
         print(" -", p)
 
