@@ -2,6 +2,8 @@
 import argparse, subprocess
 from pathlib import Path
 
+EXCLUDED_EXT = {".log", ".txt"}
+
 def GetTrackedFiles():
     out = subprocess.run(["git","ls-files"], stdout=subprocess.PIPE, check=True).stdout.decode().splitlines()
     return [Path(p) for p in out if p.strip()]
@@ -33,30 +35,30 @@ def CommitIfStaged(msg):
     return True
 
 def ProcessFiles(fix):
-    tracked = GetTrackedFiles()
-    missing = []
-    fixed = []
-    for p in tracked:
-        if not p.exists() or IsBinary(p):
-            continue
-        if NeedsNewline(p):
-            missing.append(p)
-            if fix:
-                AddNewline(p)
-                fixed.append(p)
+    missing = [
+        p for p in GetTrackedFiles()
+        if p.exists()
+        and p.suffix not in EXCLUDED_EXT
+        and not IsBinary(p)
+        and NeedsNewline(p)
+    ]
+
     if not missing:
         print("No files missing trailing newlines.")
         return 0
+
     print("Files missing trailing newline:")
     for p in missing:
         print(" -", p)
+
     if not fix:
         return 0
-    StageFiles(fixed)
-    if CommitIfStaged("[github-actions] Add missing newlines"):
-        print("Committed fixes for:", ", ".join(str(p) for p in fixed))
-    else:
-        print("No changes staged/committed.")
+
+    for p in missing:
+        AddNewline(p)
+
+    StageFiles(missing)
+    CommitIfStaged("[github-actions] Add missing newlines")
     return 0
 
 def main():
@@ -66,4 +68,4 @@ def main():
     return ProcessFiles(args.fix=="yes")
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
