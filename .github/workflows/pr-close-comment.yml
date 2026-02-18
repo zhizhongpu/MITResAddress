@@ -79,7 +79,7 @@ jobs:
           
           // Read the PR comment template
           let prCommentBody;
-            prCommentBody = fs.readFileSync('.github/post_template_pr_thread_pr_close', 'utf8');
+            prCommentBody = fs.readFileSync('.github/post_template_pr_thread_pr_close.md', 'utf8');
           
           // Add issue thread link if available
           if (issueCommentUrl) {
