@@ -51,26 +51,6 @@ jobs:
             }
           }
           
-          // Get PR reviewers for tagging
-          const reviewers = [];
-          try {
-            const reviews = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
-            
-            const uniqueReviewers = new Set();
-            reviews.data.forEach(review => {
-              if (review.user && review.user.login !== pr.user.login) {
-                uniqueReviewers.add(review.user.login);
-              }
-            });
-            reviewers.push(...uniqueReviewers);
-          } catch (error) {
-            console.log(`Could not fetch reviewers: ${error.message}`);
-          }
-          
           let issueCommentUrl = null;
           
           // Post to issue thread first
@@ -104,22 +84,21 @@ jobs:
           
           // Create PR comment
           const prUser = pr.user.login;
-          const reviewerTags = reviewers.length > 0 ? reviewers.map(r => `@${r}`).join(' ') : '';
           
-          let prCommentBody = `@${prUser} Thanks for closing the PR. I've deleted this issue branch for you.
-
-You need to:
-- [ ] edit the last post in the issue thread
-- [ ] update \`main\` to other issue branches  
-- [ ] update the datastore in the cloud
-
-If you have questions, please ask by tagging the reviewers of this PR${reviewerTags ? `: ${reviewerTags}` : ''}`;
-
+          // Read the PR comment template
+          let prCommentBody;
+          try {
+            prCommentBody = fs.readFileSync('.github/pr_comment_template.md', 'utf8');
+          } catch (error) {
+            prCommentBody = 'Thanks for closing the PR.';
+          }
+          
+          // Add user tag at the beginning
+          prCommentBody = `@${prUser} ${prCommentBody}`;
+          
           // Add issue thread link if available
           if (issueCommentUrl) {
-            prCommentBody += `
-
-📝 [Issue thread updated here](${issueCommentUrl})`;
+            prCommentBody += `\n\n📝 [Issue thread updated here](${issueCommentUrl})`;
           }
           
           // Post comment on PR
