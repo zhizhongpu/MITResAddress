@@ -10,7 +10,7 @@ Main <- function() {
     select(Country.Name, GDP_2010) %>%
     arrange(-GDP_2010) %>% 
     top_n(5) |> 
-    filter(GDP_2010 > 1234)
+    filter(GDP_2010 > 512)
   
   tag <- "<tab:top_gdp>"
   out <- file.path(outstub, "top_gdp.txt")
