@@ -59,9 +59,8 @@ jobs:
               let issueCommentBody;
               issueCommentBody = fs.readFileSync('.github/post_template_issue_thread_pr_close.md', 'utf8');
               
-              // Add merger/closer tag at the top
-              const prUser = pr.user.login;
-              issueCommentBody = `@${prUser}\n\n${issueCommentBody}`;
+              // Add last commit SHA to the end
+              issueCommentBody = `${issueCommentBody}\n\nLast commit in issue branch: ${lastCommitSha}`;
               
               const issueComment = await github.rest.issues.createComment({
                 owner: context.repo.owner,
