@@ -55,6 +55,11 @@ jobs:
             echo "No newline fixes to commit."
           fi
 
+      - id: eps_check
+        name: Check EPS savefig usage
+        continue-on-error: false
+        run: python .github/check_eps_savefig.py
+
       - id: scons_log
         name: Check for failed scons builds
         continue-on-error: false
