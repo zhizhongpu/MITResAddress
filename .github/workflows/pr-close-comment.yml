@@ -88,18 +88,18 @@ jobs:
           // Read the PR comment template
           let prCommentBody;
           try {
-            prCommentBody = fs.readFileSync('.github/pr_comment_template.md', 'utf8');
+            prCommentBody = fs.readFileSync('.github/post_template_pr_thread_pr_close', 'utf8');
           } catch (error) {
             prCommentBody = 'Thanks for closing the PR.';
           }
           
-          // Add user tag at the beginning
-          prCommentBody = `@${prUser} ${prCommentBody}`;
-          
           // Add issue thread link if available
           if (issueCommentUrl) {
-            prCommentBody += `\n\n📝 [Issue thread updated here](${issueCommentUrl})`;
+            prCommentBody = `[Issue summary](${issueCommentUrl})\n\n${prCommentBody}`;
           }
+          
+          // Add user tag at the beginning
+          prCommentBody = `@${prUser} ${prCommentBody}`;
           
           // Post comment on PR
           await github.rest.issues.createComment({
