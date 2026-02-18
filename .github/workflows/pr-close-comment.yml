@@ -51,38 +51,78 @@ jobs:
             }
           }
           
-          // Read the message template
-          let commentBody;
+          // Get PR reviewers for tagging
+          const reviewers = [];
           try {
-            commentBody = fs.readFileSync('.github/pr-close-message.md', 'utf8');
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const uniqueReviewers = new Set();
+            reviews.data.forEach(review => {
+              if (review.user && review.user.login !== pr.user.login) {
+                uniqueReviewers.add(review.user.login);
+              }
+            });
+            reviewers.push(...uniqueReviewers);
           } catch (error) {
-            commentBody = 'This PR has been closed.';
+            console.log(`Could not fetch reviewers: ${error.message}`);
           }
           
-          // Add ONLY the commit SHA as requested
-          commentBody += `\n\nLast commit in branch was ${lastCommitSha}`;
+          let issueCommentUrl = null;
+          
+          // Post to issue thread first
+          if (issueNumber) {
+            try {
+              // Read the issue thread message template
+              let issueCommentBody;
+              try {
+                issueCommentBody = fs.readFileSync('.github/post_template_issue_thread_pr_close.md', 'utf8');
+              } catch (error) {
+                issueCommentBody = 'PR has been closed.';
+              }
+              
+              const issueComment = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNumber),
+                body: issueCommentBody
+              });
+              
+              issueCommentUrl = issueComment.data.html_url;
+              console.log(`Posted to issue #${issueNumber}: ${issueCommentUrl}`);
+            } catch (error) {
+              console.log(`Could not comment on issue #${issueNumber}: ${error.message}`);
+            }
+          }
+          
+          // Create PR comment
+          const prUser = pr.user.login;
+          const reviewerTags = reviewers.length > 0 ? reviewers.map(r => `@${r}`).join(' ') : '';
+          
+          let prCommentBody = `@${prUser} Thanks for closing the PR. I've deleted this issue branch for you.
+          
+You need to:
+- [ ] edit the last post in the issue thread
+- [ ] update \`main\` to other issue branches  
+- [ ] update the datastore in the cloud
+
+If you have questions, please ask by tagging the reviewers of this PR${reviewerTags ? `: ${reviewerTags}` : ''}`;
+
+          // Add issue thread link if available
+          if (issueCommentUrl) {
+            prCommentBody += `\n\n📝 [Issue thread updated here](${issueCommentUrl})`;
+          }
           
           // Post comment on PR
           await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: prNumber,
-            body: commentBody
+            body: prCommentBody
           });
-          
-          // Post test comment to linked issues
-          if (issueNumber) {
-            try {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: parseInt(issueNumber),
-                body: `Test comment: PR #${prNumber} was ${wasMerged ? 'merged' : 'closed'}`
-              });
-            } catch (error) {
-              console.log(`Could not comment on issue #${issueNumber}: ${error.message}`);
-            }
-          }
           
           // Delete branch (both merged and unmerged cases)
           try {
