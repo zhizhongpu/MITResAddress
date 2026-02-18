@@ -1,9 +1,14 @@
+# load libraries
 library(data.table)
 
+# set paths
 rawDir <- "datastore/raw/world_bank/orig"
 outDir <- "output/derived/wb_clean"
 
 prepare_data <- function(gdpPath, educPath) {
+  ###
+  # This function reads in the GDP and education expenditure data from the World Bank
+  ###
   gdpDf <- fread(gdpPath, skip = 2, header = TRUE)
   educDf <- fread(educPath, skip = 2, header = TRUE)
 
@@ -35,14 +40,17 @@ prepare_data <- function(gdpPath, educPath) {
   return(mergedDf)
 }
 
+# file paths
 gdpPath <- file.path(rawDir, "API_NY.GDP.PCAP.CD_DS2_en_csv_v2_1740213.csv")
 educPath <- file.path(rawDir, "API_SE.XPD.TOTL.GD.ZS_DS2_en_csv_v2_1740282.csv")
 
 mergedDf <- prepare_data(gdpPath, educPath)
 
+# Aggregate data by year
 yearAgg <- mergedDf[, .(
   Mean_GDP = mean(GDP, na.rm = TRUE),
   Mean_Education_Exp = mean(Education_Exp, na.rm = TRUE)
 ), by = Year]
 
+# export data
 fwrite(yearAgg, file.path(outDir, "gdp_education_by_year.csv"))
