@@ -84,6 +84,10 @@ jobs:
                 issueCommentBody = 'PR has been closed.';
               }
               
+              // Add merger/closer tag at the top
+              const prUser = pr.user.login;
+              issueCommentBody = `@${prUser}\n\n${issueCommentBody}`;
+              
               const issueComment = await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -103,7 +107,7 @@ jobs:
           const reviewerTags = reviewers.length > 0 ? reviewers.map(r => `@${r}`).join(' ') : '';
           
           let prCommentBody = `@${prUser} Thanks for closing the PR. I've deleted this issue branch for you.
-          
+
 You need to:
 - [ ] edit the last post in the issue thread
 - [ ] update \`main\` to other issue branches  
@@ -113,7 +117,9 @@ If you have questions, please ask by tagging the reviewers of this PR${reviewerT
 
           // Add issue thread link if available
           if (issueCommentUrl) {
-            prCommentBody += `\n\n📝 [Issue thread updated here](${issueCommentUrl})`;
+            prCommentBody += `
+
+📝 [Issue thread updated here](${issueCommentUrl})`;
           }
           
           // Post comment on PR
