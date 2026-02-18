@@ -1,13 +1,9 @@
 Prioritize the following:
-- Flag any hardcoded values except for file paths and names.
-- Flag any export of data of key-value structure to csv using non-SaveData functions.
-- Flag violations of the following variable naming conventions:
-  - All variables should be lowercase except for static variables which should be ALL CAPS.
-  - All functions should be PascalCase.
-  - All other objects, including dataframe variable names, should be snake_case.
-- Flag scripts that are not written in [modular form, with the first function being the `Main` function]
-- Flag changes in scripts and outputs that are not reflected in corresponding changes in `SConscript` files.
-- Flag any docstrings for functions in scripts not in `source/lib`, as well as in-inline documentations starting with `#`.
+- Flag any unexplained, hardcoded numerical values.
+- Flag saving data to file that is done not through SaveData function; Suggest changes using `SaveData()` (syntax is documented in `source/lib/SaveData.py`)
+- Flag added code with variable / function / dataframe column naming convention that deviates from the existing naming convention in the repo
+- Flag scripts that are not written in modular form, a `Main`/`main` function
+- Flag any script (excluding those in `source/lib`) that routinely uses trivial / obvious code documention such as inline comments or function docstrings. Non-library scripts should be self-documenting with minimal documentation.
 
 If you can't complete all of the above, flag in the review comment that you didn't flag everything and that the user should request another review from you.
 
