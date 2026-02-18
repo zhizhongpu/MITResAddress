@@ -15,10 +15,14 @@ jobs:
   comment:
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
     - name: Comment on PR close
       uses: actions/github-script@v7
       with:
         script: |
+          const fs = require('fs');
           const pr = context.payload.pull_request;
           const prNumber = pr.number;
           const wasMerged = pr.merged;
@@ -47,23 +51,16 @@ jobs:
             }
           }
           
-          // Build comment body
+          // Read the message template
           let commentBody;
-          if (wasMerged) {
-            const merger = pr.merged_by ? `@${pr.merged_by.login}` : 'someone';
-            commentBody = `The PR is closed (merged) by ${merger}`;
-          } else {
-            commentBody = "The PR is closed (unmerged)";
+          try {
+            commentBody = fs.readFileSync('.github/pr-close-message.md', 'utf8');
+          } catch (error) {
+            commentBody = 'This PR has been closed.';
           }
           
-          // Add last commit info
-          commentBody += `\n\nLast commit: \`${lastCommitSha.substring(0, 7)}\``;
-          
-          // Add issue links if found
-          if (issueRefs.length > 0) {
-            const issueLinks = issueRefs.map(num => `#${num}`).join(', ');
-            commentBody += `\n\nRelated issues: ${issueLinks}`;
-          }
+          // Add ONLY the commit SHA as requested
+          commentBody += `\n\nLast commit in branch was ${lastCommitSha}`;
           
           // Post comment on PR
           await github.rest.issues.createComment({
