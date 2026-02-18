@@ -1,0 +1,32 @@
+# Post a comment when a PR is closed (merged or unmerged)
+
+name: PR Close Comment
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Comment on PR close
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const prNumber = context.payload.pull_request.number;
+          const wasMerged = context.payload.pull_request.merged;
+          
+          let commentBody;
+          if (wasMerged) {
+            commentBody = "The PR is closed (merged)";
+          } else {
+            commentBody = "The PR is closed (unmerged)";
+          }
+          
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: commentBody
+          });
