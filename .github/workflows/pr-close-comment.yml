@@ -55,14 +55,9 @@ jobs:
           
           // Post to issue thread first
           if (issueNumber) {
-            try {
               // Read the issue thread message template
               let issueCommentBody;
-              try {
-                issueCommentBody = fs.readFileSync('.github/post_template_issue_thread_pr_close.md', 'utf8');
-              } catch (error) {
-                issueCommentBody = 'PR has been closed.';
-              }
+              issueCommentBody = fs.readFileSync('.github/post_template_issue_thread_pr_close.md', 'utf8');
               
               // Add merger/closer tag at the top
               const prUser = pr.user.login;
@@ -77,9 +72,6 @@ jobs:
               
               issueCommentUrl = issueComment.data.html_url;
               console.log(`Posted to issue #${issueNumber}: ${issueCommentUrl}`);
-            } catch (error) {
-              console.log(`Could not comment on issue #${issueNumber}: ${error.message}`);
-            }
           }
           
           // Create PR comment
@@ -87,11 +79,7 @@ jobs:
           
           // Read the PR comment template
           let prCommentBody;
-          try {
             prCommentBody = fs.readFileSync('.github/post_template_pr_thread_pr_close', 'utf8');
-          } catch (error) {
-            prCommentBody = 'Thanks for closing the PR.';
-          }
           
           // Add issue thread link if available
           if (issueCommentUrl) {
@@ -110,13 +98,9 @@ jobs:
           });
           
           // Delete branch (both merged and unmerged cases)
-          try {
             await github.rest.git.deleteRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: `heads/${branchName}`
             });
             console.log(`Branch ${branchName} deleted successfully`);
-          } catch (error) {
-            console.log(`Could not delete branch ${branchName}: ${error.message}`);
-          }
