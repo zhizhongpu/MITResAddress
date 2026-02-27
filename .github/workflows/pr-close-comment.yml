@@ -9,7 +9,6 @@ on:
 permissions:
   issues: write
   pull-requests: write
-  contents: write
 
 jobs:
   comment:
@@ -17,89 +16,21 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
-    - name: Comment on PR close
-      uses: actions/github-script@v7
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        script: |
-          const fs = require('fs');
-          const pr = context.payload.pull_request;
-          const prNumber = pr.number;
-          const wasMerged = pr.merged;
-          const branchName = pr.head.ref;
-          const lastCommitSha = pr.head.sha;
-          
-          // Extract issue number from branch name (first contiguous integer)
-          const issueMatch = branchName.match(/^(\d+)/);
-          const issueNumber = issueMatch ? issueMatch[1] : null;
-          
-          // Parse issue references from PR body
-          const prBody = pr.body || '';
-          const issueRefs = [];
-          const issuePatterns = [
-            /(?:fix(?:es|ed)?|close(?:s|d)?|resolve(?:s|d)?)\s+#(\d+)/gi,
-            /#(\d+)/g
-          ];
-          
-          for (const pattern of issuePatterns) {
-            let match;
-            while ((match = pattern.exec(prBody)) !== null) {
-              const num = match[1];
-              if (!issueRefs.includes(num)) {
-                issueRefs.push(num);
-              }
-            }
-          }
-          
-          let issueCommentUrl = null;
-          
-          // Post to issue thread first
-          if (issueNumber) {
-              // Read the issue thread message template
-              let issueCommentBody;
-              issueCommentBody = fs.readFileSync('.github/post_template_issue_thread_pr_close.md', 'utf8');
-              
-              // Add last commit SHA to the end
-              issueCommentBody = `${issueCommentBody}\n\nLast commit in issue branch: ${lastCommitSha}`;
-              
-              const issueComment = await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: parseInt(issueNumber),
-                body: issueCommentBody
-              });
-              
-              issueCommentUrl = issueComment.data.html_url;
-              console.log(`Posted to issue #${issueNumber}: ${issueCommentUrl}`);
-          }
-          
-          // Create PR comment
-          const prUser = pr.user.login;
-          
-          // Read the PR comment template
-          let prCommentBody;
-            prCommentBody = fs.readFileSync('.github/post_template_pr_thread_pr_close.md', 'utf8');
-          
-          // Add issue thread link if available
-          if (issueCommentUrl) {
-            prCommentBody = `[Issue summary](${issueCommentUrl})\n\n${prCommentBody}`;
-          }
-          
-          // Add user tag at the beginning
-          prCommentBody = `@${prUser} ${prCommentBody}`;
-          
-          // Post comment on PR
-          await github.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: prNumber,
-            body: prCommentBody
-          });
-          
-          // Delete branch (both merged and unmerged cases)
-            await github.rest.git.deleteRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: `heads/${branchName}`
-            });
-            console.log(`Branch ${branchName} deleted successfully`);
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: pip install PyGithub
+
+    - name: Comment on PR close
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+        LAST_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+      run: python .github/scripts/pr_close_comment.py
