@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys
 from pathlib import Path
 
 TARGET = "terminated because of errors."
@@ -23,5 +24,4 @@ def Main():
     return 1
 
 if __name__ == "__main__":
-    Main()
-
+    sys.exit(Main())
