@@ -1,4 +1,4 @@
-Thanks for closing the PR. 
+Thanks for closing the PR.
 
 You need to:
 - [ ] edit the issue summary post above
