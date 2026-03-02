@@ -44,9 +44,12 @@ jobs:
       - name: Fail if any check failed
         if: always()
         run: |
-          if [[ "${{ steps.scons.outcome }}" == "failure" || \
-                "${{ steps.newlines.outcome }}" == "failure" || \
-                "${{ steps.eps_check.outcome }}" == "failure" || \
-                "${{ steps.scons_log.outcome }}" == "failure" ]]; then
+          failed=()
+          [[ "${{ steps.scons.outcome }}"     == "failure" ]] && failed+=("scons")
+          [[ "${{ steps.newlines.outcome }}"  == "failure" ]] && failed+=("newlines")
+          [[ "${{ steps.eps_check.outcome }}" == "failure" ]] && failed+=("eps_check")
+          [[ "${{ steps.scons_log.outcome }}" == "failure" ]] && failed+=("scons_log")
+          if [[ ${#failed[@]} -gt 0 ]]; then
+            echo "Failed checks: ${failed[*]}"
             exit 1
           fi
