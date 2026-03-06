@@ -106,7 +106,7 @@ def SourceFoldersMissingInSConstruct():
     )
     if content is None:
         return folders
-    return [f for f in folders if not re.search(rf"\b{re.escape(f)}\b", content)]
+    return [f for f in folders if f"source/{f}/SConscript" not in content]
 
 
 if __name__ == "__main__":

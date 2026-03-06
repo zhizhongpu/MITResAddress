@@ -5,8 +5,10 @@ from pathlib import Path
 
 EXCLUDED_EXT = {".log", ".txt"}
 
+INCLUDED_DIRS = {"source", "output"}
+
 def GetTrackedFiles():
-    return [Path(p) for p in subprocess.run(["git","ls-files"], stdout=subprocess.PIPE, check=True).stdout.decode().splitlines() if p.strip()]
+    return [Path(p) for p in subprocess.run(["git","ls-files"], stdout=subprocess.PIPE, check=True).stdout.decode().splitlines() if p.strip() and Path(p).parts[0] in INCLUDED_DIRS]
 
 def IsBinary(p):
     try:
