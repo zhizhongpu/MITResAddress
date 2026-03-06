@@ -18,7 +18,7 @@ def Main():
     print("Runtime:")
     rows, failed = CollectResults()
 
-    if "--post-results" in sys.argv:
+    if "--post" in sys.argv:
         PostResults(repo, run_id, rows, failed)
 
     if failed:

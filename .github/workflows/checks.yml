@@ -90,4 +90,4 @@ jobs:
           CHECK_SCONS_LOG_TIME: ${{ steps.check_scons_log.outputs.time }}
         run: |
           python .github/post_check_results.py \
-            ${{ contains(github.event.comment.body, '--post-results') && '--post-results' || '' }}
+            ${{ contains(github.event.comment.body, '--post') && '--post' || '' }}
