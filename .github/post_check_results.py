@@ -2,6 +2,7 @@
 import os
 import subprocess
 import sys
+import json
 
 CHECKS = [
     ("SCons DAG", "check_scons"),
@@ -10,20 +11,28 @@ CHECKS = [
     ("Build log", "check_scons_log"),
 ]
 
-def main():
+def Main():
     repo   = os.environ["GITHUB_REPOSITORY"]
     run_id = os.environ["GITHUB_RUN_ID"]
 
-    rows   = []
-    failed = []
-
     print("Runtime:")
+    rows, failed = CollectResults()
+
+    if "--post" in sys.argv:
+        PostResults(repo, run_id, rows, failed)
+
+    if failed:
+        print(f"Failed checks: {', '.join(failed)}")
+        return 1
+    return 0
+
+def CollectResults():
+    rows, failed = [], []
     for name, step_id in CHECKS:
         key     = step_id.upper()
         outcome = os.environ.get(f"{key}_OUTCOME", "skipped")
         time    = os.environ.get(f"{key}_TIME", "")
         print(f"  {step_id}: {time}s")
-
         if outcome == "skipped":
             rows.append(f"| {name} | SKIP | |")
         elif outcome == "success":
@@ -31,33 +40,29 @@ def main():
         else:
             failed.append(name)
             rows.append(f"| {name} | ❌ | {time}s |")
+    return rows, failed
 
-    pr_num = os.environ.get("PR_NUMBER")
-    if pr_num:
-        pr_sha      = os.environ["PR_SHA"]
-        comment_url = os.environ.get("COMMENT_URL", "")
-        run_url     = f"https://github.com/{repo}/actions/runs/{run_id}"
-
-        table   = "\n".join(["| Check | Result | Time |", "|-------|--------|------|", *rows])
-        trigger = f" · [requesting comment]({comment_url})" if comment_url else ""
-        body    = f"**Check Results** ([run details]({run_url}){trigger})\n\n{table}"
-
-        subprocess.run(["gh", "pr", "comment", pr_num, "--body", body], check=True)
-
-        state = "failure" if failed else "success"
-        desc  = f"Failed: {', '.join(failed)}" if failed else "All checks passed"
-        subprocess.run([
-            "gh", "api", f"repos/{repo}/statuses/{pr_sha}",
-            "-f", f"state={state}",
-            "-f", "context=Checks",
-            "-f", f"description={desc}",
-            "-f", f"target_url={run_url}",
-        ], check=True)
-
-    if failed:
-        print(f"Failed checks: {', '.join(failed)}")
-        return 1
-    return 0
+def PostResults(repo, run_id, rows, failed):
+    run_url    = f"https://github.com/{repo}/actions/runs/{run_id}"
+    table      = "\n".join(["| Check | Result | Time |", "|-------|--------|------|", *rows])
+    results    = f"\n\n---\n\n**Check Results** ([run details]({run_url}))\n\n{table}"
+    comment_id = os.environ["COMMENT_ID"]
+    pr_sha     = os.environ["PR_SHA"]
+    original   = json.loads(subprocess.run(
+        ["gh", "api", f"repos/{repo}/issues/comments/{comment_id}"],
+        capture_output=True, check=True,
+    ).stdout)["body"]
+    subprocess.run([
+        "gh", "api", f"repos/{repo}/issues/comments/{comment_id}",
+        "--method", "PATCH", "-f", f"body={original}{results}",
+    ], check=True)
+    state = "failure" if failed else "success"
+    desc  = f"Failed: {', '.join(failed)}" if failed else "All checks passed"
+    subprocess.run([
+        "gh", "api", f"repos/{repo}/statuses/{pr_sha}",
+        "-f", f"state={state}", "-f", "context=Checks",
+        "-f", f"description={desc}", "-f", f"target_url={run_url}",
+    ], check=True)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(Main())
