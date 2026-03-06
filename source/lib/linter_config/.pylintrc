@@ -1,0 +1,35 @@
+[MASTER]
+enable=unused-import,unused-variable,invalid-name
+
+disable=
+    missing-module-docstring,    
+    missing-function-docstring,  
+    wrong-import-order,          
+    import-error,                
+    trailing-newlines,
+    trailing-whitespace,
+    line-too-long,
+    too-many-locals,
+    multiple-imports,
+    too-many-positional-arguments,
+    multiple-statements,
+    logging-fstring-interpolation,
+    too-many-arguments,
+    broad-exception-caught,
+    redefined-outer-name,
+    inconsistent-return-statements,
+    cell-var-from-loop,
+    unnecessary-lambda-assignment,
+    consider-using-with,
+    superfluous-parens
+
+
+[MESSAGES CONTROL]
+# keep enable/disable above as source of truth
+
+[BASIC]
+argument-rgx=^(_?[A-Z][A-Z0-9_]*|_?[a-z][a-z0-9_]*?)$
+good-names=main
+function-naming-style=PascalCase
+variable-naming-style=snake_case
+const-naming-style=UPPER_CASE
