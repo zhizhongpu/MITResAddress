@@ -15,12 +15,27 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      statuses: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || github.sha }}
+
+      - name: Post pending commit status
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq '.head.sha')
+          echo "PR_SHA=$PR_SHA" >> $GITHUB_ENV
+          gh api repos/${{ github.repository }}/statuses/$PR_SHA \
+            -f state=pending \
+            -f context="Checks" \
+            -f description="Running..." \
+            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -59,20 +74,18 @@ jobs:
         with:
           script: .github/check_sconscript_log.py
 
-      - name: Report runtime
+      - name: Post results
         if: always()
-        run: |
-          echo "check_scons:     ${{ steps.check_scons.outputs.time }}s"
-          echo "check_newlines:  ${{ steps.check_newlines.outputs.time }}s"
-          echo "check_eps:       ${{ steps.check_eps.outputs.time }}s"
-          echo "check_scons_log: ${{ steps.check_scons_log.outputs.time }}s"
-
-      - name: Fail if any check failed
-        if: always()
-        run: |
-          failed=()
-          [[ "${{ steps.check_scons.outcome }}"     == "failure" ]] && failed+=("check_scons")
-          [[ "${{ steps.check_newlines.outcome }}"  == "failure" ]] && failed+=("check_newlines")
-          [[ "${{ steps.check_eps.outcome }}"       == "failure" ]] && failed+=("check_eps")
-          [[ "${{ steps.check_scons_log.outcome }}" == "failure" ]] && failed+=("check_scons_log")
-          if [[ ${#failed[@]} -gt 0 ]]; then echo "Failed checks: ${failed[*]}"; exit 1; fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event_name == 'issue_comment' && github.event.issue.number || '' }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          CHECK_SCONS_OUTCOME: ${{ steps.check_scons.outcome }}
+          CHECK_SCONS_TIME: ${{ steps.check_scons.outputs.time }}
+          CHECK_NEWLINES_OUTCOME: ${{ steps.check_newlines.outcome }}
+          CHECK_NEWLINES_TIME: ${{ steps.check_newlines.outputs.time }}
+          CHECK_EPS_OUTCOME: ${{ steps.check_eps.outcome }}
+          CHECK_EPS_TIME: ${{ steps.check_eps.outputs.time }}
+          CHECK_SCONS_LOG_OUTCOME: ${{ steps.check_scons_log.outcome }}
+          CHECK_SCONS_LOG_TIME: ${{ steps.check_scons_log.outputs.time }}
+        run: python .github/post_check_results.py
