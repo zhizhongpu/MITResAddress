@@ -1,0 +1,78 @@
+name: Checks
+
+on:
+  push:
+    branches:
+      - "**"
+  issue_comment:
+    types: [created]
+
+jobs:
+  checks:
+    if: |
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-actions-all]')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/run-actions-'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - id: check_scons
+        name: Check SCons DAG for missing dependencies
+        if: github.event_name == 'push' || contains(github.event.comment.body, '/run-actions-dag') || contains(github.event.comment.body, '/run-actions-all')
+        continue-on-error: true
+        uses: ./.github/actions/timed-check
+        with:
+          script: .github/check_sconscripts.py
+
+      - id: check_newlines
+        name: Check missing newlines
+        if: github.event_name == 'push' || contains(github.event.comment.body, '/run-actions-newlines') || contains(github.event.comment.body, '/run-actions-all')
+        continue-on-error: true
+        uses: ./.github/actions/timed-check
+        with:
+          script: .github/check_newlines.py
+
+      - id: check_eps
+        name: Check extraneous EPS data
+        if: github.event_name == 'push' || contains(github.event.comment.body, '/run-actions-eps') || contains(github.event.comment.body, '/run-actions-all')
+        continue-on-error: true
+        uses: ./.github/actions/timed-check
+        with:
+          script: .github/check_eps_savefig.py
+
+      - id: check_scons_log
+        name: Check build failure
+        if: github.event_name == 'push' || contains(github.event.comment.body, '/run-actions-log') || contains(github.event.comment.body, '/run-actions-all')
+        continue-on-error: true
+        uses: ./.github/actions/timed-check
+        with:
+          script: .github/check_sconscript_log.py
+
+      - name: Report runtime
+        if: always()
+        run: |
+          echo "check_scons:     ${{ steps.check_scons.outputs.time }}s"
+          echo "check_newlines:  ${{ steps.check_newlines.outputs.time }}s"
+          echo "check_eps:       ${{ steps.check_eps.outputs.time }}s"
+          echo "check_scons_log: ${{ steps.check_scons_log.outputs.time }}s"
+
+      - name: Fail if any check failed
+        if: always()
+        run: |
+          failed=()
+          [[ "${{ steps.check_scons.outcome }}"     == "failure" ]] && failed+=("check_scons")
+          [[ "${{ steps.check_newlines.outcome }}"  == "failure" ]] && failed+=("check_newlines")
+          [[ "${{ steps.check_eps.outcome }}"       == "failure" ]] && failed+=("check_eps")
+          [[ "${{ steps.check_scons_log.outcome }}" == "failure" ]] && failed+=("check_scons_log")
+          if [[ ${#failed[@]} -gt 0 ]]; then echo "Failed checks: ${failed[*]}"; exit 1; fi
