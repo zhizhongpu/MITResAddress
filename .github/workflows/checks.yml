@@ -74,60 +74,18 @@ jobs:
         with:
           script: .github/check_sconscript_log.py
 
-      - name: Report runtime
+      - name: Post results
         if: always()
-        run: |
-          echo "check_scons:     ${{ steps.check_scons.outputs.time }}s"
-          echo "check_newlines:  ${{ steps.check_newlines.outputs.time }}s"
-          echo "check_eps:       ${{ steps.check_eps.outputs.time }}s"
-          echo "check_scons_log: ${{ steps.check_scons_log.outputs.time }}s"
-
-      - name: Post PR comment and commit status
-        if: always() && github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          icon() { [[ "$1" == "success" ]] && echo "pass" || [[ "$1" == "skipped" ]] && echo "skip" || echo "FAIL"; }
-          scons_icon=$(icon "${{ steps.check_scons.outcome }}")
-          newlines_icon=$(icon "${{ steps.check_newlines.outcome }}")
-          eps_icon=$(icon "${{ steps.check_eps.outcome }}")
-          log_icon=$(icon "${{ steps.check_scons_log.outcome }}")
-
-          gh pr comment ${{ github.event.issue.number }} --body "**Check Results** ([run details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}))
-
-          | Check | Result | Time |
-          |-------|--------|------|
-          | SCons DAG | $scons_icon | ${{ steps.check_scons.outputs.time }}s |
-          | Newlines | $newlines_icon | ${{ steps.check_newlines.outputs.time }}s |
-          | EPS data | $eps_icon | ${{ steps.check_eps.outputs.time }}s |
-          | Build log | $log_icon | ${{ steps.check_scons_log.outputs.time }}s |"
-
-          failed=()
-          [[ "${{ steps.check_scons.outcome }}"     == "failure" ]] && failed+=("check_scons")
-          [[ "${{ steps.check_newlines.outcome }}"  == "failure" ]] && failed+=("check_newlines")
-          [[ "${{ steps.check_eps.outcome }}"       == "failure" ]] && failed+=("check_eps")
-          [[ "${{ steps.check_scons_log.outcome }}" == "failure" ]] && failed+=("check_scons_log")
-
-          if [[ ${#failed[@]} -gt 0 ]]; then
-            STATE=failure
-            DESC="Failed: ${failed[*]}"
-          else
-            STATE=success
-            DESC="All checks passed"
-          fi
-
-          gh api repos/${{ github.repository }}/statuses/$PR_SHA \
-            -f state=$STATE \
-            -f context="Checks" \
-            -f description="$DESC" \
-            -f target_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: Fail if any check failed
-        if: always()
-        run: |
-          failed=()
-          [[ "${{ steps.check_scons.outcome }}"     == "failure" ]] && failed+=("check_scons")
-          [[ "${{ steps.check_newlines.outcome }}"  == "failure" ]] && failed+=("check_newlines")
-          [[ "${{ steps.check_eps.outcome }}"       == "failure" ]] && failed+=("check_eps")
-          [[ "${{ steps.check_scons_log.outcome }}" == "failure" ]] && failed+=("check_scons_log")
-          if [[ ${#failed[@]} -gt 0 ]]; then echo "Failed checks: ${failed[*]}"; exit 1; fi
+          PR_NUMBER: ${{ github.event_name == 'issue_comment' && github.event.issue.number || '' }}
+          COMMENT_URL: ${{ github.event.comment.html_url }}
+          CHECK_SCONS_OUTCOME: ${{ steps.check_scons.outcome }}
+          CHECK_SCONS_TIME: ${{ steps.check_scons.outputs.time }}
+          CHECK_NEWLINES_OUTCOME: ${{ steps.check_newlines.outcome }}
+          CHECK_NEWLINES_TIME: ${{ steps.check_newlines.outputs.time }}
+          CHECK_EPS_OUTCOME: ${{ steps.check_eps.outcome }}
+          CHECK_EPS_TIME: ${{ steps.check_eps.outputs.time }}
+          CHECK_SCONS_LOG_OUTCOME: ${{ steps.check_scons_log.outcome }}
+          CHECK_SCONS_LOG_TIME: ${{ steps.check_scons_log.outputs.time }}
+        run: python .github/post_check_results.py
