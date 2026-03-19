@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-CHECKS_JSON = os.path.join(os.path.dirname(__file__), 'checks.json')
+CHECKS_JSON = os.path.join(os.path.dirname(__file__), '../checks/checks.json')
 
 def Main():
     repo   = os.environ["GITHUB_REPOSITORY"]
