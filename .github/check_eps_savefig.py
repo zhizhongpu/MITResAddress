@@ -78,12 +78,57 @@ def CollectEpsProblems(root, excluded):
     
     return problems
 
+def CheckEpsCreationDate(content):
+    """
+    Check if any line in an EPS file starts with %%CreationDate.
+    Returns True if it does.
+    """
+    return any(line.startswith("%%CreationDate") for line in content.splitlines())
+
+def CollectEpsCreationDateProblems(root, excluded):
+    """Walk through EPS files and report those that contain %%CreationDate"""
+    eps_files = []
+    
+    for dir_path, dir_names, file_names in os.walk(root):
+        if IsExcludedPath(dir_path, excluded):
+            dir_names[:] = []
+            continue
+            
+        dir_names[:] = [d for d in dir_names if not IsIgnoredDir(d)]
+        
+        for file_name in file_names:
+            if not file_name.endswith('.eps'):
+                continue
+                
+            if IsHidden(file_name):
+                continue
+                
+            eps_path = os.path.join(dir_path, file_name)
+            content = ReadFile(eps_path)
+            
+            if content is None:
+                continue
+                
+            if CheckEpsCreationDate(content):
+                eps_files.append(eps_path)
+    
+    return eps_files
+
 def main():
-    root = "source"
-    excluded = ["source/lib", "source/raw", "source/scrape"]
+    source_root   = "source"
+    output_root   = "output"
+    excluded      = ["source/lib", "source/raw", "source/scrape"]
+
+    problems = CollectEpsProblems(source_root, excluded)
+    creationdate_eps_files = CollectEpsCreationDateProblems(output_root, [])
     
-    problems = CollectEpsProblems(root, excluded)
-    
+    if creationdate_eps_files:
+        print("EPS files containing %%CreationDate:")
+        for eps_file in creationdate_eps_files:
+            print(f"  {eps_file}")
+        print("")
+        return 1
+
     if problems:
         print("EPS savefig check failed!")
         print("\nPython files using .savefig(*eps*) without remove_eps_info():")
