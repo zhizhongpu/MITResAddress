@@ -3,10 +3,11 @@ name: Check temp/ is empty
 on:
   pull_request:
     branches: [main, master]
-    types: [ready_for_review]
+    types: [labeled]
 
 jobs:
   check-temp:
+    if: github.event.label.name == 'ready-to-merge'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
