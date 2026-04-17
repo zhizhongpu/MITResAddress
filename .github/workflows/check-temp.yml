@@ -1,0 +1,19 @@
+name: Check temp/ is empty
+
+on:
+  pull_request:
+    branches: [main, master]
+    types: [ready_for_review]
+
+jobs:
+  check-temp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fail if temp/ is non-empty
+        run: |
+          if [ -d "temp" ] && [ -n "$(ls -A temp/)" ]; then
+            echo "temp/ is not empty. Please delete its contents before merging."
+            exit 1
+          fi
+          echo "temp/ is empty or does not exist."
