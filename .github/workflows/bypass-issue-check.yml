@@ -9,16 +9,12 @@ jobs:
     if: github.event.issue.pull_request && contains(github.event.comment.body, '/bypass-issue-check')
     runs-on: ubuntu-latest
     permissions:
-      checks: write
+      pull-requests: write
     steps:
-      - name: Post success check run
+      - name: Add bypass label to PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PR_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq '.head.sha')
-          gh api repos/${{ github.repository }}/check-runs \
+          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/labels \
             --method POST \
-            -f name="check-issue" \
-            -f head_sha="$PR_SHA" \
-            -f status=completed \
-            -f conclusion=success
+            -f "labels[]=bypass-issue-check"

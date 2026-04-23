@@ -7,12 +7,16 @@ on:
 
 jobs:
   check-issue:
-    if: github.event.action == 'opened' || github.event.label.name == 'ready-to-merge'
+    if: github.event.action == 'opened' || github.event.label.name == 'ready-to-merge' || github.event.label.name == 'bypass-issue-check'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Fail if issue/ is non-empty
         run: |
+          if [ "${{ github.event.label.name }}" = "bypass-issue-check" ]; then
+            echo "Check bypassed via label."
+            exit 0
+          fi
           if [ -d "issue" ] && [ -n "$(ls -A issue/)" ]; then
             echo "issue/ is not empty. Please delete its contents before merging."
             exit 1
