@@ -1,0 +1,24 @@
+name: Bypass issue/ check
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  bypass:
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '/bypass-issue-check')
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - name: Post success check run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq '.head.sha')
+          gh api repos/${{ github.repository }}/check-runs \
+            --method POST \
+            -f name="check-issue" \
+            -f head_sha="$PR_SHA" \
+            -f status=completed \
+            -f conclusion=success
